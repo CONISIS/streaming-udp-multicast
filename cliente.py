@@ -31,20 +31,18 @@ while True:
     # Recibir mensaje
     mensaje = Socket.recvfrom(TamBuffer)
     # Si se tiene un nuevo frame se espera un mensaje con el tamaño
-    if mensaje[0]==b"Nuevo Frame":
+    if len(mensaje[0])==24:
         # Se recibe tamaño
-        mensaje = Socket.recvfrom(TamBuffer)
         m = np.frombuffer(mensaje[0],dtype='int64')
-        if np.size(m)==3:
-            Alto=m[0]
-            Capas=m[1]
-            Ancho=m[2]
+        Alto=m[0]
+        Capas=m[1]
+        Ancho=m[2]
         # Se genera el frame
         frame=np.array(p)
         # Se verifica y proyecta el frame
         if np.size(frame)>5:
             cv2.imshow('Frame', frame)
-            cv2.waitKey(100)
+            cv2.waitKey(25)
         # Reiniciar variables
         p=[]
         n=0
