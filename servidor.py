@@ -2,7 +2,6 @@ import socket
 import struct
 import cv2
 import numpy as np
-import time
 
 # Cositas varias
 IP     = "224.1.1.1"
@@ -39,12 +38,8 @@ print("Arranqué en la IP: "+IP+" y puerto: "+str(Puerto))
 # Transmitir
 while(True):
     for i in v:
-        # Un nuevo frame se enviara
-        Socket.sendto(str.encode("Nuevo Frame"), (IP,Puerto))
-        # Se envia el tamaño
+        # Se envia el tamaño anunciando un nuevo frame
         Socket.sendto(np.array([np.size(i[0,:,0]),np.size(i[0,0,:]),np.size(i[:,0,0])]).tobytes(), (IP,Puerto))
-        # Se secciona el frame
+        # Se secciona el frame y se envia
         for j in range(np.size(i[:,0,0])):
             Socket.sendto(i[j,:,:].tobytes(), (IP,Puerto))
-        # Espera un momento
-        time.sleep(.01)
