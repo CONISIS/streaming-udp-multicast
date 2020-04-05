@@ -53,7 +53,17 @@ def capturar(IP="224.1.1.1",Puerto=20001,TamBuffer= 1024):
                 n=0
             # Recibir fragmentos de un frame
             if n<Ancho:
-                recibido=np.frombuffer(Socket.recvfrom(Alto*Capas*8)[0],dtype='uint8')
+                # Recibir frame
+                entrada=Socket.recvfrom((Alto*Capas*8)+16)[0]
+                # Obtener posicion
+                entrada = bytearray(entrada)
+                num1 = entrada.pop(len(entrada)-1)
+                num2 = entrada.pop(len(entrada)-1)
+                num = bytearray(num2.to_bytes(1, byteorder='big'))
+                num.extend(num1.to_bytes(1, byteorder='big'))
+                num = int.from_bytes(num,byteorder='big')
+                # Reconstruir seccion de frame
+                recibido=np.frombuffer(entrada,dtype='uint8')
                 if len(recibido)==Alto*Capas:
                     p.append(recibido.reshape(Alto,Capas))
                 n=n+1
