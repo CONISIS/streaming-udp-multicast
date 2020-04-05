@@ -2,6 +2,7 @@ import socket
 import struct
 import cv2
 import numpy as np
+import time
 
 # Cositas varias
 IP     = "224.1.1.1"
@@ -42,4 +43,9 @@ while(True):
         Socket.sendto(np.array([np.size(i[0,:,0]),np.size(i[0,0,:]),np.size(i[:,0,0])]).tobytes(), (IP,Puerto))
         # Se secciona el frame y se envia
         for j in range(np.size(i[:,0,0])):
-            Socket.sendto(i[j,:,:].tobytes(), (IP,Puerto))
+            # Transformar seccion a bytes
+            enviar = bytearray(i[j,:,:].tobytes())
+            # Agregar info de posicion
+            enviar.extend(j.to_bytes(2, byteorder='big'))
+            # Enviar
+            Socket.sendto(enviar, (IP,Puerto))
