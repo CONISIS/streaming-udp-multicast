@@ -12,18 +12,19 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('--ip', type=str, help='La IP donde el servidor escucha nuevos clientes', default="127.0.0.1")
 parser.add_argument('--puerto', type=int, help='El puerto donde el servidor escucha nuevos clientes', default=25000)
+parser.add_argument('--variable', type=bool, help='Permite que la ventana cambie de tamaño cuando hay perdidas', default=False)
 args = parser.parse_args()
 
 # Variables de conexion con servidor
 IP = args.ip
 Puerto = args.puerto
 TamBuffer = 1024
+Variable= args.variable
 
 #Control para terminar captura
 cap=True
 #Buffer de frames
 buff=Queue()
-buff1=Queue()
 
 def capturar(IP="224.1.1.1",Puerto=20001,TamBuffer= 1024):
     global cap
@@ -63,10 +64,12 @@ def capturar(IP="224.1.1.1",Puerto=20001,TamBuffer= 1024):
                 frame=np.array(p)
                 # Se verifica y proyecta el frame
                 if np.size(frame)>5:
-                    buff.put(frame)
-                    buff1.put(p1)
+                    if Variable:
+                        buff.put(frame)
+                    else:
+                        buff.put(p1)
                 # Reiniciar variables
-                p1=np.zeros((Ancho,Alto,Capas))
+                p1=np.zeros((Ancho,Alto,Capas),dtype="uint8")
                 p=[]
                 n=[]
                 continue
@@ -85,9 +88,10 @@ def capturar(IP="224.1.1.1",Puerto=20001,TamBuffer= 1024):
                 # Reconstruir seccion de frame
                 recibido=np.frombuffer(entrada,dtype='uint8')
                 if len(recibido)==Alto*Capas:
-                    p.append(recibido.reshape(Alto,Capas))
-                    p1[num,:,:]=recibido.reshape(Alto,Capas)
+                    reconstruido = recibido.reshape(Alto,Capas)
+                    p.append(reconstruido)
                     if num not in n:
+                        p1[num,:,:]=reconstruido
                         n.append(num)
     print("Captura en la IP: "+IP+" y puerto: "+str(Puerto)+" terminada")
 
@@ -138,9 +142,8 @@ while True:
 
     # Reiniciar variables
     buff=Queue()
-    buff1=Queue()
     cap=True
-    
+
     print("Iniciando streaming en el canal: "+can[canal-1]+" (presione 'q' en la ventana para salir)\n")
     #Inicia captura para el canal seleccionado
     t1 = threading.Thread(target = capturar,kwargs={'IP':ips[canal-1]})
@@ -153,7 +156,6 @@ while True:
         # revisar que el buffer tenga mas de un frame
         if buff.qsize() > 0:
             cv2.imshow(can[canal-1], buff.get())
-            cv2.imshow(can[canal-1]+" Numpy", buff1.get())
             # Salir al presionar q
             if cv2.waitKey(50) & 0xFF == ord('q'):
                 break
