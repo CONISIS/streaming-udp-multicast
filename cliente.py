@@ -100,7 +100,7 @@ while True:
     with socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM) as Socket:
         # Enviar mensaje al servidor
         Socket.sendto(str.encode("Hola"), (IP, Puerto))
-        print("Esperando servidor...")
+        print("Esperando servidor en "+IP+":"+str(Puerto)+"...")
         # Obtener respuesta
         recibido = Socket.recvfrom(TamBuffer)
         dir = (recibido[0].decode()).split(" ")
@@ -136,21 +136,24 @@ while True:
         sys.exit()
     print()
 
+    # Reiniciar variables
+    buff=Queue()
+    buff1=Queue()
+    cap=True
+    
     print("Iniciando streaming en el canal: "+can[canal-1]+" (presione 'q' en la ventana para salir)\n")
     #Inicia captura para el canal seleccionado
     t1 = threading.Thread(target = capturar,kwargs={'IP':ips[canal-1]})
     t1.start()
 
-    # Reiniciar variables
-    buff=Queue()
-    buff1=Queue()
-    cap=True
+
+
     #Inicia reproduccion
     while True:
         # revisar que el buffer tenga mas de un frame
         if buff.qsize() > 0:
             cv2.imshow(can[canal-1], buff.get())
-            #cv2.imshow(can[canal-1]+" Numpy", buff1.get()) Reproducr ventana tamano fijo
+            cv2.imshow(can[canal-1]+" Numpy", buff1.get())
             # Salir al presionar q
             if cv2.waitKey(50) & 0xFF == ord('q'):
                 break
