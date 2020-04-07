@@ -4,11 +4,12 @@ import cv2
 import numpy as np
 import time
 import threading
-from os import walk
+import os
 import argparse
 import sys
 from pynput import keyboard
 import select
+from queue import Queue
 
 # Obtener argumentos
 parser = argparse.ArgumentParser()
@@ -25,12 +26,16 @@ TamBuffer = 1024
 ca = []
 estado = [True]
 
+# Variables de craga simultanea
+cargado=Queue()
+
 # Cargar video
-def cargar(ruta):
+def cargar(ruta=""):
+    global cargado
     p=[]
     Video = cv2.VideoCapture(ruta)
     if (Video.isOpened()== False):
-        print("Error cargando el video")
+        print("Error cargando el video: "+ruta)
         return None
     while(Video.isOpened()):
         ret, frame = Video.read()
@@ -39,10 +44,11 @@ def cargar(ruta):
         else:
             break
     Video.release()
-    return p
+    cargado.put((ruta,p))
+    return None
 
 # Inicia un canal de broadcast
-def canal(IP = "224.1.1.1",Puerto = 20001,v=None,e=0):
+def canal(IP = "224.1.1.1",Puerto = 20001,v=None,e=0,nombre="Canal"):
     global estado
     # Crear socket
     with socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM) as Socket:
@@ -51,7 +57,7 @@ def canal(IP = "224.1.1.1",Puerto = 20001,v=None,e=0):
         Socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, struct.pack('b', 1))
 
         # Informar
-        print("Canal "+str(e)+": Arranqué en "+IP+":"+str(Puerto))
+        print("Canal "+nombre+": Arranqué en "+IP+":"+str(Puerto))
 
         # Transmitir
         while estado[e]:
@@ -69,38 +75,74 @@ def canal(IP = "224.1.1.1",Puerto = 20001,v=None,e=0):
                     # Enviar
                     Socket.sendto(enviar, (IP,Puerto))
 
-    print("Canal "+str(e)+": Termine en "+IP+":"+str(Puerto))
+    print("Canal "+nombre+": Termine en "+IP+":"+str(Puerto))
 
 # Escuchar teclado para detectar interrupcion
 interrumpir = True
 def on_press(tecla):
     global interrumpir
-    if tecla == keyboard.KeyCode.from_char("p"):
+    if tecla == keyboard.KeyCode.from_char("z"):
         print ("\nApagando...")
         interrumpir = False
         return False
 
 
-print ("\nBienvenido al servidor de streaming por broadcast UDP (presione 'p' para salir)\n")
+print ("\nBienvenido al servidor de streaming por broadcast UDP (presione 'z' para salir)\n")
 
 # Cargar contenido
 print ("Cargando contenido...")
-v=cargar('Video1.mp4')
-v1=cargar('Video2.mp4')
+cargando=[]
+contenido = {}
+# Explora carpeta canales
+for (direccion, directorios, archivos) in os.walk(os.path.abspath("")+"/canales"):
+    for directorio in directorios:
+        # Para cada canal explora archivos
+        for (direccion, directorios, archivos) in os.walk(os.path.abspath("")+"/canales/"+directorio):
+            print(directorio,end=": ")
+            # Contador para verificar si mas de 0 videos en el canal
+            cont = 0
+            for video in archivos:
+                # Verifica si archivo es video
+                if video.endswith(".mp4"):
+                    print(video,end=" ")
+                    # Crea thread de caraga
+                    t=threading.Thread(target = cargar,kwargs={'ruta':"canales/"+directorio+"/"+video})
+                    t.start()
+                    # Agrega thread a lista
+                    cargando.append(t)
+                    cont=cont+1
+            if cont==0:
+                print("Ningun video (no se toma en cuenta)",end="")
+            else:
+                contenido[directorio.replace(" ", "")]=[]
+            print()
+            break
+    break
 
-print("Iniciando canales...")
+# Espera a que terminen las cargas de cada video
+for i in cargando:
+    i.join()
+
+# Asignar videos a canales
+while cargado.qsize()>0:
+    video=cargado.get()
+    nombrecanal = (video[0].split("/")[1]).replace(" ", "")
+    contenido[nombrecanal].extend(video[1])
+
+
+print("\nIniciando canales...")
 #Inicia canal
-estado.append(True)
-t1 = threading.Thread(target = canal,kwargs={'IP':"224.1.1.1",'v':v,'e':1})
-t1.start()
-ca.append(("224.1.1.1",t1,"Canal1"))
-
-
-#Inicia canal
-estado.append(True)
-t2 = threading.Thread(target = canal,kwargs={'IP':"224.1.1.2",'v':v1,'e':2})
-t2.start()
-ca.append(("224.1.1.2",t2,"Canal2"))
+r=1
+for infocanal in contenido:
+    estado.append(True)
+    # Ip del canal
+    dir="224.1.1."+str(r)
+    # Thread del canal
+    t = threading.Thread(target = canal,kwargs={'IP':dir,'v':contenido[infocanal],'e':r,'nombre':infocanal})
+    t.start()
+    # Se guarda info del canal
+    ca.append((dir,t,infocanal))
+    r=r+1
 
 # Loop principal
 # Inicia escucha de teclado
@@ -110,7 +152,7 @@ with keyboard.Listener(on_press=on_press) as listener:
         # Conecta socket a ip y puerto
         Socket.bind((IP, Puerto))
         # Iniciando escucha de clientes
-        print("Escuchando clientes en: "+IP+":"+str(Puerto)+"\n")
+        print("\nEscuchando clientes en: "+IP+":"+str(Puerto)+"\n")
         while interrumpir:
             # Verifica si llego mensaje
             leer, escribir, error = select.select([Socket],[],[],10)
