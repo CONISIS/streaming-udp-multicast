@@ -94,60 +94,68 @@ def capturar(IP="224.1.1.1",Puerto=20001,TamBuffer= 1024):
 
 print ("\nBienvenido al cliente de streaming por broadcast UDP\n")
 
-# Contactar servidor
-dir=""
-with socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM) as Socket:
-    # Enviar mensaje al servidor
-    Socket.sendto(str.encode("Hola"), (IP, Puerto))
-    print("Esperando servidor...")
-    # Obtener respuesta
-    recibido = Socket.recvfrom(TamBuffer)
-    dir = (recibido[0].decode()).split(" ")
-    # Verificar respuesta
-    if dir[0] != "Canales:":
-        print("Error de conexion")
-        sys.exit()
-    dir.pop(0)
-
-# Obtener canales e ips de respuesta
-ips=[]
-can=[]
-print("Canales disponibles:\n")
-for i in range(len(dir)):
-    info = dir[i].split(",")
-    print(str(i+1)+". "+info[1])
-    ips.append(info[0])
-    can.append(info[1])
-
-# Solicitar al usuario seleccionar un canal
-canal=input("\nSeleccione un canal (escriba un numero de la lista)\n")
-# Verificar input
-try:
-    canal=int(canal)
-except:
-    print("Ingrese un numero de la lista")
-    sys.exit()
-if canal<1 or canal>len(ips):
-    print("Ingrese un numero de la lista")
-    sys.exit()
-print()
-
-print("Iniciando streaming en el canal: "+can[canal-1]+" (presione 'q' en la ventana para salir)\n")
-#Inicia captura para el canal seleccionado
-t1 = threading.Thread(target = capturar,kwargs={'IP':ips[canal-1]})
-t1.start()
-
-#Inicia reproduccion
 while True:
-    # revisar que el buffer tenga mas de un frame
-    if buff.qsize() > 0:
-        cv2.imshow(can[canal-1], buff.get())
-        #cv2.imshow(can[canal-1]+" Numpy", buff1.get()) Reproducr ventana tamano fijo
-        # Salir al presionar q
-        if cv2.waitKey(50) & 0xFF == ord('q'):
-            break
-cv2.destroyAllWindows()
+    # Contactar servidor
+    dir=""
+    with socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM) as Socket:
+        # Enviar mensaje al servidor
+        Socket.sendto(str.encode("Hola"), (IP, Puerto))
+        print("Esperando servidor...")
+        # Obtener respuesta
+        recibido = Socket.recvfrom(TamBuffer)
+        dir = (recibido[0].decode()).split(" ")
+        # Verificar respuesta
+        if dir[0] != "Canales:":
+            print("Error de conexion")
+            sys.exit()
+        dir.pop(0)
 
-# Terminar captura
-cap=False
-t1.join()
+    # Obtener canales e ips de respuesta
+    ips=[]
+    can=[]
+    print("Canales disponibles:\n")
+    for i in range(len(dir)):
+        info = dir[i].split(",")
+        print(str(i+1)+". "+info[1])
+        ips.append(info[0])
+        can.append(info[1])
+
+    # Solicitar al usuario seleccionar un canal
+    canal=input("\nSeleccione un canal (escriba un numero de la lista, 'x' para salir)\n")
+    # Verificar input
+    if canal == "x":
+        print("Saliendo...")
+        sys.exit()
+    try:
+        canal=int(canal)
+    except:
+        print("Ingrese un numero de la lista")
+        sys.exit()
+    if canal<1 or canal>len(ips):
+        print("Ingrese un numero de la lista")
+        sys.exit()
+    print()
+
+    print("Iniciando streaming en el canal: "+can[canal-1]+" (presione 'q' en la ventana para salir)\n")
+    #Inicia captura para el canal seleccionado
+    t1 = threading.Thread(target = capturar,kwargs={'IP':ips[canal-1]})
+    t1.start()
+
+    # Reiniciar variables
+    buff=Queue()
+    buff1=Queue()
+    cap=True
+    #Inicia reproduccion
+    while True:
+        # revisar que el buffer tenga mas de un frame
+        if buff.qsize() > 0:
+            cv2.imshow(can[canal-1], buff.get())
+            #cv2.imshow(can[canal-1]+" Numpy", buff1.get()) Reproducr ventana tamano fijo
+            # Salir al presionar q
+            if cv2.waitKey(50) & 0xFF == ord('q'):
+                break
+    cv2.destroyAllWindows()
+    cv2.waitKey(1)
+    # Terminar captura
+    cap=False
+    t1.join()
