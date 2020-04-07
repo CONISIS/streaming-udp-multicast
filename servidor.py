@@ -56,6 +56,8 @@ def canal(IP = "224.1.1.1",Puerto = 20001,v=None,e=0):
         # Transmitir
         while estado[e]:
             for i in v:
+                if not estado[e]:
+                    break
                 # Se envia el tamaño anunciando un nuevo frame
                 Socket.sendto(np.array([np.size(i[0,:,0]),np.size(i[0,0,:]),np.size(i[:,0,0])]).tobytes(), (IP,Puerto))
                 # Se secciona el frame y se envia
@@ -83,7 +85,8 @@ print ("\nBienvenido al servidor de streaming por broadcast UDP (presione 'p' pa
 
 # Cargar contenido
 print ("Cargando contenido...")
-v=cargar('Video.mp4')
+v=cargar('Video1.mp4')
+v1=cargar('Video2.mp4')
 
 print("Iniciando canales...")
 #Inicia canal
@@ -95,7 +98,7 @@ ca.append(("224.1.1.1",t1,"Canal1"))
 
 #Inicia canal
 estado.append(True)
-t2 = threading.Thread(target = canal,kwargs={'IP':"224.1.1.2",'v':v,'e':2})
+t2 = threading.Thread(target = canal,kwargs={'IP':"224.1.1.2",'v':v1,'e':2})
 t2.start()
 ca.append(("224.1.1.2",t2,"Canal2"))
 
