@@ -13,7 +13,7 @@ import select
 # Obtener argumentos
 parser = argparse.ArgumentParser()
 parser.add_argument('--ip', type=str, help='La IP donde el servidor escucha nuevos clientes', default="127.0.0.1")
-parser.add_argument('--puerto', type=int, help='El puerto donde el servidor escucha nuevos clientes', default=20001)
+parser.add_argument('--puerto', type=int, help='El puerto donde el servidor escucha nuevos clientes', default=25000)
 args = parser.parse_args()
 
 # Variables de conexion con clientes
@@ -42,7 +42,7 @@ def cargar(ruta):
     return p
 
 # Inicia un canal de broadcast
-def canal(IP = "224.1.1.1",Puerto = 20001,v=cargar('Video.mp4'),e=0):
+def canal(IP = "224.1.1.1",Puerto = 20001,v=None,e=0):
     global estado
     # Crear socket
     with socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM) as Socket:
@@ -73,13 +73,13 @@ def canal(IP = "224.1.1.1",Puerto = 20001,v=cargar('Video.mp4'),e=0):
 interrumpir = True
 def on_press(tecla):
     global interrumpir
-    if tecla == keyboard.KeyCode.from_char("q"):
+    if tecla == keyboard.KeyCode.from_char("p"):
         print ("\nApagando...")
         interrumpir = False
         return False
 
 
-print ("\nBienvenido al servidor de streaming por broadcast UDP (presione 'q' para salir)\n")
+print ("\nBienvenido al servidor de streaming por broadcast UDP (presione 'p' para salir)\n")
 
 # Cargar contenido
 print ("Cargando contenido...")
@@ -90,14 +90,14 @@ print("Iniciando canales...")
 estado.append(True)
 t1 = threading.Thread(target = canal,kwargs={'IP':"224.1.1.1",'v':v,'e':1})
 t1.start()
-ca.append(("224.1.1.1",t1))
+ca.append(("224.1.1.1",t1,"Canal1"))
 
 
 #Inicia canal
 estado.append(True)
 t2 = threading.Thread(target = canal,kwargs={'IP':"224.1.1.2",'v':v,'e':2})
 t2.start()
-ca.append(("224.1.1.2",t2))
+ca.append(("224.1.1.2",t2,"Canal2"))
 
 # Loop principal
 # Inicia escucha de teclado
@@ -119,10 +119,10 @@ with keyboard.Listener(on_press=on_press) as listener:
                     # Informa solicitud
                     print("Solicitud de catalogo: "+recibido[1][0]+":"+str(recibido[1][1]))
                     # Envia catalogo
-                    s = "Canales disponibles: "
+                    s = "Canales: "
                     for i in ca:
-                        s=s+i[0]+" "
-                    Socket.sendto(str.encode(s), recibido[1])
+                        s=s+i[0]+","+i[2]+" "
+                    Socket.sendto(str.encode(s.strip()), recibido[1])
     listener.join()
 
 # Detener threads
