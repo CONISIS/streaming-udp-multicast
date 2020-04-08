@@ -1,7 +1,7 @@
 # Python Streaming UDP Multicast Service
 **Contents/Contenido**
 
-[TOCM]
+[TO CM]
 ## English
 ### Description
 This is a UDP multicast streaming service fully developed on Python. It comes with a server and a client. The server reads videos from the channels folder and broadcasts them in a loop. The server generates a different IP for each channel detected. The client connects to the server, and after obtaining the catalog from the server, allows the user to pick a channel and start viewing. Currently, this is a video-only service and does not support audio: but it can be extended for this purpose. The streaming serviced is based on the Socket library for communication and on OpenCV for dealing with video. Other libraries such as Pynput are used to enhance the experience by allowing exit on keypress.
@@ -25,13 +25,21 @@ pip3 install pynput
 This streaming service consists of two scripts: _servidor.py_ and _cliente.py_. The first one -the server- is in charge of doing the broadcast. For this, it first scans for directories on the directory _canales_, that must be in the same location as the scripts. Each directory found in this folder corresponds to one channel. The videos for each channel must be inside the directory that corresponds to that channel: right now mp4 format is required, all other formats are ignored. The following is an example of this scheme:
 
 ├── canales
+
 │   ├── Canal1
+
 │   │   ├── Video1.mp4
+
 │   │   └── Video2.mp4
+
 │   ├── Canal2
+
 │   │   └── Video3.mp4
+
 │   └── Canal3
+
 ├── cliente.py
+
 └── servidor.py
 
 In this case, the server would interpret this as 3 channels: _Canal1_, _Canal2_, and _Canal3_. _Canal1_ would have _Video1_ and _Video2_, _Canal2_ would have _Video3_ and _Canal3_ would be empty. The server would broadcast only the first two channels as the third one is empty. Once the data is loaded the transmission begins. The server can be ended at any time by pressing the _z_ key.
@@ -92,13 +100,21 @@ pip3 install pynput
 Este servicio de transmisión consta de dos scripts: _servidor.py_ y _cliente.py_. El primero, el servidor, se encarga de hacer la transmisión. Para esto, primero busca directorios en los canales del directorio _canales_, que deben estar en la misma ubicación que los scripts. Cada directorio encontrado en esta carpeta corresponde a un canal. Los videos para cada canal deben estar dentro del directorio que corresponde a ese canal: en este momento se requiere el formato mp4, todos los demás formatos se ignoran. El siguiente es un ejemplo de este esquema:
 
 ├── canales
+
 │   ├── Canal1
+
 │   │   ├── Video1.mp4
+
 │   │   └── Video2.mp4
+
 │   ├── Canal2
+
 │   │   └── Video3.mp4
+
 │   └── Canal3
+
 ├── cliente.py
+
 └── servidor.py
 
 En este caso, el servidor interpretaría esto como 3 canales: _Canal1_, _Canal2_ y _Canal3_. _Canal1_ tendría _Video1_ y _Video2_, _Canal2_ tendría _Video3_ y _Canal3_ estaría vacío. El servidor transmitiría solo los primeros dos canales ya que el tercero está vacío. Una vez que se cargan los datos, comienza la transmisión. El servidor se puede finalizar en cualquier momento presionando la tecla _z_.
