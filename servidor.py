@@ -62,6 +62,7 @@ def canal(IP = "224.1.1.1",Puerto = 20001,v=None,e=0,nombre="Canal"):
         # Transmitir
         while estado[e]:
             for i in v:
+                time.sleep(0.005)
                 if not estado[e]:
                     break
                 # Se envia el tamaño anunciando un nuevo frame
